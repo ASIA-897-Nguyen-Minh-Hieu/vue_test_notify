@@ -1,24 +1,30 @@
-name: Build + ZAP + Deploy
+name: CI/CD Pipeline
 
 on:
+  # Kiểm tra khi mở/sync PR
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
+
+  # Build & deploy khi đã merge vào main
+  push:
+    branches: [main]
 
 jobs:
   build_and_zap_check:
-    if: github.event.action != 'closed'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    name: ✅ Build + ZAP Check (Pre-Merge)
+    name: ✅ Build + ZAP Check (PR validation)
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install and build Vue app
-        run: |
-          npm ci
-          npm run build
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vue app
+        run: npm run build
 
       - name: Serve Vue app locally
         run: |
@@ -29,24 +35,24 @@ jobs:
       - name: Run ZAP Scan
         uses: zaproxy/action-baseline@v0.7.0
         with:
-          target: 'https://asia-897-nguyen-minh-hieu.github.io/vue_test_notify/'
+          target: 'http://localhost:3000'
           docker_name: 'ghcr.io/zaproxy/zaproxy'
-          fail_action: false
+          fail_action: true
 
   deploy_after_merge:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    name: 🚀 Deploy to GitHub Pages (Post-Merge)
-    needs: build_and_zap_check
+    name: 🚀 Build & Deploy (After Merge)
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install and build Vue app
-        run: |
-          npm ci
-          npm run build
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vue app
+        run: npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
