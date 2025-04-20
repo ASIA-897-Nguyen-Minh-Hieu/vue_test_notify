@@ -1,12 +1,10 @@
 name: CI/CD Pipeline
 
 on:
-  # Kiểm tra khi mở/sync PR
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
 
-  # Build & deploy khi đã merge vào main
   push:
     branches: [main]
 
